@@ -4,7 +4,7 @@ metadata:
   name: mysql-headless #for clustering the services
   namespace: expense 
 spec:
-  clusterIp: none # it indicates headless service
+  clusterIp: None # it indicates headless service
   selector:
     component: mysql
     project: expense
