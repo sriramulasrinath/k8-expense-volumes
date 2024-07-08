@@ -1,0 +1,69 @@
+apiVersion: v1 
+kind: Service 
+metadata:
+  name: mysql-headless #for clustering the services
+  namespace: expense 
+spec:
+  clusterIp: none # it indicates headless service
+  selector:
+    component: mysql
+    project: expense
+    tier: db
+  ports:
+  - protocol: TCP
+    port: 3306 #service-port
+    targetPort: 3306 #target-port
+---
+apiVersion: v1 
+kind: Service 
+metadata:
+  name: mysql 
+  namespace: expense 
+spec:
+  selector:
+    component: mysql
+    project: expense
+    tier: db
+  ports:
+  - protocol: TCP
+    port: 3306 #service-port
+    targetPort: 3306 #target-port
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: expense
+spec:
+  selector:
+    matchLabels:
+      component: mysql
+      project: expense
+      tier: db # has to match .spec.template.metadata.labels
+  serviceName: "mysql-headless" #provide headless service name here
+  replicas: 2 # by default is 1
+  template:
+    metadata:
+      labels:
+        component: mysql
+        project: expense
+        tier: db # has to match .spec.selector.matchLabels
+    spec:
+      containers:
+      - name: mysql
+        image: joindevops/mysql:v1.0
+        imagePullPolicy: Always 
+        volumeMounts:
+        - name: mysql
+          mountPath: /var/lib/mysql
+  # PVC decleration mandatory for stateful applications
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: expense-ebs
+      resources:
+        requests:
+          storage: 1Gi
